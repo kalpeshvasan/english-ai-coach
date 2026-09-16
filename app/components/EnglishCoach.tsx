@@ -8,6 +8,30 @@ export default function EnglishCoach() {
   const [coachResponse, setCoachResponse] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  const copyCorrection = async () => {
+    try {
+      const correction =
+        coachResponse
+          .match(
+            /CORRECTION:\s*([\s\S]*?)(?=EXPLANATION:|$)/i
+          )?.[1]
+          ?.trim() || "";
+
+      if (!correction) return;
+
+      await navigator.clipboard.writeText(correction);
+
+      setCopied(true);
+
+      setTimeout(() => {
+        setCopied(false);
+      }, 2000);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
 
   const sendMessage = async (text: string) => {
     const trimmedText = text.trim();
@@ -19,6 +43,7 @@ export default function EnglishCoach() {
     setMessage(trimmedText);
     setCoachResponse("");
     setError("");
+    setCopied(false);
     setLoading(true);
 
     try {
@@ -100,6 +125,7 @@ export default function EnglishCoach() {
       <div className="background-glow glow-two" />
 
       <section className="coach-container">
+
         {/* Header */}
         <header className="coach-header">
           <div className="brand">
@@ -135,6 +161,7 @@ export default function EnglishCoach() {
 
         {/* Conversation */}
         <div className="conversation">
+
           {/* User message */}
           {message && (
             <div className="message-row user-row">
@@ -181,20 +208,40 @@ export default function EnglishCoach() {
 
               {/* Correction */}
               <div className="feedback-card correction-card">
+
                 <div className="feedback-header">
                   <div className="feedback-icon">
                     ✓
                   </div>
 
-                  <div>
-                    <span>Correction</span>
-                    <small>Your improved sentence</small>
+                  <div className="feedback-title">
+                    <div>
+                      <span>Correction</span>
+                      <small>Your improved sentence</small>
+                    </div>
+
+                    {/* Copy button */}
+                    <button
+                      type="button"
+                      className="copy-button"
+                      onClick={copyCorrection}
+                      title="Copy correction"
+                    >
+                      {copied ? (
+                        <>
+                          ✓ Copied
+                        </>
+                      ) : (
+                        <>
+                          📋 Copy
+                        </>
+                      )}
+                    </button>
                   </div>
                 </div>
 
                 <p className="correction-text">
-                  {parsed.correction ||
-                    coachResponse}
+                  {parsed.correction || coachResponse}
                 </p>
               </div>
 
@@ -237,6 +284,7 @@ export default function EnglishCoach() {
                   </p>
                 </div>
               )}
+
             </div>
           )}
         </div>
@@ -247,6 +295,7 @@ export default function EnglishCoach() {
           onSubmit={handleSubmit}
         >
           <div className="input-wrapper">
+
             <textarea
               value={message}
               onChange={(e) =>
@@ -261,13 +310,16 @@ export default function EnglishCoach() {
                   !e.shiftKey
                 ) {
                   e.preventDefault();
+
                   handleSubmit(
                     e as unknown as React.FormEvent
                   );
                 }
               }}
             />
+
             <div className="input-actions">
+
               <VoiceButton
                 onResult={handleVoiceResult}
               />
@@ -288,6 +340,7 @@ export default function EnglishCoach() {
                   </>
                 )}
               </button>
+
             </div>
           </div>
 
@@ -296,6 +349,7 @@ export default function EnglishCoach() {
             You can type or speak in English
           </div>
         </form>
+
       </section>
 
       <style jsx>{`
@@ -307,6 +361,7 @@ export default function EnglishCoach() {
           min-height: 100vh;
           position: relative;
           overflow: hidden;
+
           background:
             radial-gradient(
               circle at top left,
@@ -482,8 +537,8 @@ export default function EnglishCoach() {
 
           font-size: 26px;
 
-          box-shadow: 0 5px 15px
-            rgba(99, 102, 241, 0.12);
+          box-shadow:
+            0 5px 15px rgba(99, 102, 241, 0.12);
         }
 
         .welcome-section h2 {
@@ -647,6 +702,8 @@ export default function EnglishCoach() {
           align-items: center;
           justify-content: center;
 
+          flex-shrink: 0;
+
           border-radius: 10px;
 
           background: #f1f5f9;
@@ -669,6 +726,53 @@ export default function EnglishCoach() {
           color: #94a3b8;
 
           font-size: 11px;
+        }
+
+        /* Header content + copy button */
+
+        .feedback-title {
+          flex: 1;
+
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+
+          gap: 10px;
+        }
+
+        .copy-button {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          padding: 7px 11px;
+
+          border: 1px solid #dbe1ea;
+          border-radius: 8px;
+
+          background: #f8fafc;
+
+          color: #475569;
+
+          font-size: 11px;
+          font-weight: 600;
+
+          cursor: pointer;
+
+          transition:
+            background 0.2s,
+            border-color 0.2s,
+            transform 0.15s;
+        }
+
+        .copy-button:hover {
+          background: #eef2ff;
+          border-color: #c7d2fe;
+          color: #4f46e5;
+        }
+
+        .copy-button:active {
+          transform: scale(0.96);
         }
 
         .feedback-card p {
@@ -761,7 +865,8 @@ export default function EnglishCoach() {
           box-shadow:
             0 8px 25px rgba(15, 23, 42, 0.06);
 
-          transition: border 0.2s,
+          transition:
+            border 0.2s,
             box-shadow 0.2s;
         }
 
@@ -834,7 +939,8 @@ export default function EnglishCoach() {
 
           cursor: pointer;
 
-          transition: transform 0.15s,
+          transition:
+            transform 0.15s,
             box-shadow 0.15s;
         }
 
@@ -919,6 +1025,11 @@ export default function EnglishCoach() {
 
           .online-status {
             display: none;
+          }
+
+          .copy-button {
+            padding: 6px 8px;
+            font-size: 10px;
           }
         }
       `}</style>
