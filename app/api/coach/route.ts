@@ -25,7 +25,7 @@ export async function POST(request: Request) {
     console.log("Calling Gemini...");
 
     const response = await gemini.models.generateContent({
-      model: "gemini-2.5-flash-lite",
+      model: "gemini-3.5-flash-lite",
       contents: `${coachPrompt}
 
 User message:
