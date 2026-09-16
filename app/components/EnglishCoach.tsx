@@ -267,7 +267,6 @@ export default function EnglishCoach() {
                 }
               }}
             />
-
             <div className="input-actions">
               <VoiceButton
                 onResult={handleVoiceResult}
