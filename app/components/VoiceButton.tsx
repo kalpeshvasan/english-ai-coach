@@ -3,91 +3,125 @@
 import { useRef, useState } from "react";
 
 type Props = {
-  onResult: (text: string) => void;
-  disabled?: boolean;
+  onResult: (text: string) => void | Promise<void>;
 };
 
-type SpeechRecognitionLike = {
-  lang: string;
-  interimResults: boolean;
-  continuous: boolean;
-  maxAlternatives: number;
-  onresult: ((event: { results: { [index: number]: { [index: number]: { transcript: string } } } }) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
-};
+export default function VoiceButton({ onResult }: Props) {
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
 
-type SpeechRecognitionConstructor = new () => SpeechRecognitionLike;
+  const playSound = (type: "start" | "stop") => {
+    const AudioContext =
+      window.AudioContext ||
+      (window as any).webkitAudioContext;
 
-export default function VoiceButton({ onResult, disabled = false }: Props) {
-  const [listening, setListening] = useState(false);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+    const audioContext = new AudioContext();
 
-  const stopListening = () => {
-    const recognition = recognitionRef.current;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
 
-    if (recognition) {
-      recognition.onend = null;
-      recognition.stop();
-      recognitionRef.current = null;
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+
+    if (type === "start") {
+      // 🔊 Higher beep
+      oscillator.frequency.value = 800;
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.15
+      );
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.15);
+    } else {
+      // 🔊 Lower boop
+      oscillator.frequency.value = 400;
+      oscillator.type = "sine";
+
+      gainNode.gain.setValueAtTime(0.15, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(
+        0.001,
+        audioContext.currentTime + 0.2
+      );
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.2);
     }
-
-    setListening(false);
   };
 
   const startListening = () => {
     const SpeechRecognition =
-      (window as unknown as { SpeechRecognition?: SpeechRecognitionConstructor })
-        .SpeechRecognition ||
-      (window as unknown as { webkitSpeechRecognition?: SpeechRecognitionConstructor })
-        .webkitSpeechRecognition;
+      (window as any).SpeechRecognition ||
+      (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
       alert("Speech recognition is not supported in this browser.");
       return;
     }
 
-    stopListening();
-
     const recognition = new SpeechRecognition();
 
-    recognition.lang = "en-US";
+    recognition.lang = "en-IN";
     recognition.interimResults = false;
     recognition.continuous = false;
-    recognition.maxAlternatives = 1;
 
-    recognition.onresult = (event) => {
+    recognitionRef.current = recognition;
+
+    // 🔊 Start beep
+    playSound("start");
+
+    // 🎤 Start listening after beep
+    setTimeout(() => {
+      recognition.start();
+      setIsListening(true);
+    }, 150);
+    
+    recognition.onresult = (event: any) => {
       const transcript = event.results[0][0].transcript;
-      const trimmed = transcript.trim();
 
-      if (trimmed) {
-        onResult(trimmed);
-      }
-    };
-
-    recognition.onerror = () => {
-      stopListening();
+      onResult(transcript);
     };
 
     recognition.onend = () => {
-      stopListening();
+      setIsListening(false);
     };
 
-    recognitionRef.current = recognition;
-    recognition.start();
-    setListening(true);
+    recognition.onerror = () => {
+      setIsListening(false);
+    };
+  };
+
+  const stopListening = () => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+
+    // 🔊 Stop boop
+    playSound("stop");
+
+    // 🛑 Stop listening
+    setIsListening(false);
   };
 
   return (
     <button
       type="button"
-      onClick={listening ? stopListening : startListening}
-      disabled={disabled}
-      className={`voiceButton ${listening ? "listening" : ""}`}
+      onClick={isListening ? stopListening : startListening}
+      style={{
+        padding: "12px 20px",
+        borderRadius: "12px",
+        border: "none",
+        cursor: "pointer",
+        background: isListening ? "#fee2e2" : "#111827",
+        color: isListening ? "#dc2626" : "white",
+        fontWeight: 600,
+      }}
     >
-      {listening ? "Stop Listening" : "Start Speaking"}
+      {isListening ? "🛑 Stop Speaking" : "🎤 Start Speaking"}
     </button>
   );
 }
