@@ -25,14 +25,14 @@ export async function POST(request: Request) {
     console.log("Calling Gemini...");
 
     const response = await gemini.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash-lite",
       contents: `${coachPrompt}
 
 User message:
 ${message}`,
       config: {
         maxOutputTokens: 300,
-        temperature: 0.3,
+        temperature: 0.2,
       },
     });
 
